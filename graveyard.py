@@ -13,15 +13,22 @@ def fetch(user, token=None):
 def esc(s):
     return str(s).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace(chr(34),'&quot;')
 
-def plants(days,x,y):
-    p=[]
-    if days>=30: p.append(f'<path class="plant" d="M{x-28} {y}q-7-13-13-17M{x-28} {y}q6-14 13-19"/>')
-    if days>=90: p.append(f'<path class="plant" d="M{x+30} {y}q10-20 1-36M{x+31} {y-22}q12-8 18-2M{x+31} {y-29}q-11-8-16-1"/>')
-    if days>=180: p.append(f'<path class="vine" d="M{x-43} {y-7}q25-17 17-48q-5-18 10-31M{x-27} {y-51}q-13-8-18 2"/>')
-    if days>=365: p.append(f'<path class="vine" d="M{x+42} {y-5}q-23-24-9-49q10-18-2-36M{x+34} {y-55}q13-8 18 1"/>')
+def plants(days,x,y,name):
+    seed=sum(ord(c) for c in name)%3; p=[]
+    # low, quiet ground growth; old graves gain detail rather than giant lines
+    p.append(f'<path class="plant" d="M{x-35} {y}q-4-8-8-11M{x-35} {y}q3-9 8-12"/>')
+    if days>=90: p.append(f'<path class="plant" d="M{x+34} {y}q-5-11-10-14M{x+34} {y}q4-10 10-13"/>')
+    if days>=180: p.append(f'<path class="vine" d="M{x-40} {y-2}q10-13 5-28q-4-12 4-22M{x-35} {y-29}q-7-4-10 1M{x-33} {y-39}q7-5 11-1"/>')
+    if days>=365:
+        side=1 if seed else -1; sx=x+side*27
+        p.append(f'<path class="vine" d="M{sx} {y}q{-side*7}-13 0-25q{side*6}-9 1-18"/>')
+        p.append(f'<circle class="flower" cx="{x+side*31}" cy="{y-46}" r="2.2"/>')
     return ''.join(p)
 
-def render(user,data,minimum=30,limit=8):
+def keeper(x,y):
+    return f'<g class="keeper"><path d="M{x-14} {y}q3-18 14-18t14 18q-3 10-14 10T{x-14} {y}Z"/><path d="M{x-7} {y-14}q7 7 14 0M{x-4} {y-4}h1M{x+4} {y-4}h1"/></g>'
+
+def render(user,data,minimum=30,limit=8,history=None):
     now=datetime.now(timezone.utc); dead=[]
     for r in data:
         if r.get('fork') or r.get('archived') or r['name'].lower()==user.lower(): continue
@@ -29,12 +36,12 @@ def render(user,data,minimum=30,limit=8):
         if days>=minimum: dead.append((days,r['name'],r['html_url'],r['pushed_at'][:10]))
     dead=sorted(dead,reverse=True)[:limit]
     rows=max(1,(len(dead)+3)//4); h=70+rows*165
-    out=[f'<svg width="900" height="{h}" viewBox="0 0 900 {h}" xmlns="http://www.w3.org/2000/svg">', '<style>.name{font:500 12px monospace;fill:#66717d}.age{font:400 9px monospace;fill:#98a2ad}.stone,.plant,.vine{fill:none;stroke:#aeb8c2;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round}.plant{stroke:#94a69a}.vine{stroke:#84998a}@media(prefers-color-scheme:dark){.name{fill:#b3bbc5}.age{fill:#77828e}.stone{stroke:#778390}.plant{stroke:#71877a}.vine{stroke:#688071}}</style>', f'<text class="age" x="30" y="30">graveyard of @{esc(user)} · generated from real push dates</text>']
+    out=[f'<svg width="900" height="{h}" viewBox="0 0 900 {h}" xmlns="http://www.w3.org/2000/svg">', '<style>.name{font:500 12px monospace;fill:#66717d}.age{font:400 9px monospace;fill:#98a2ad}.stone,.plant,.vine,.keeper{fill:none;stroke-linecap:round;stroke-linejoin:round}.stone{stroke:#aeb8c2;stroke-width:1}.plant{stroke:#a9b7ad;stroke-width:.8}.vine{stroke:#9dad9f;stroke-width:.75}.flower{fill:none;stroke:#9dad9f;stroke-width:.7}.keeper{stroke:#aeb8c2;stroke-width:.8}@media(prefers-color-scheme:dark){.name{fill:#b3bbc5}.age{fill:#77828e}.stone,.keeper{stroke:#778390}.plant{stroke:#71877a}.vine,.flower{stroke:#688071}}</style>', f'<text class="age" x="30" y="30">graveyard of @{esc(user)} · generated from real push dates</text>']
     if not dead: out.append('<text class="name" x="450" y="100" text-anchor="middle">nothing to bury. suspicious.</text>')
     for i,(days,name,url,last_push) in enumerate(dead):
         x=120+(i%4)*210; y=130+(i//4)*165
-        out.append(f'<a href="{esc(url)}"><path class="stone" d="M{x-42} {y+15}V{y-42}C{x-42} {y-64} {x+42} {y-64} {x+42} {y-42}V{y+15}M{x-52} {y+15}H{x+52}"/><text class="name" x="{x}" y="{y-18}" text-anchor="middle">{esc(name[:20])}</text><text class="age" x="{x}" y="{y+34}" text-anchor="middle">died {last_push}</text><text class="age" x="{x}" y="{y+48}" text-anchor="middle">{days} days quiet</text>{plants(days,x,y+15)}</a>')
-    out.append('</svg>'); return ''.join(out)
+        out.append(f'<a href="{esc(url)}"><path class="stone" d="M{x-42} {y+15}V{y-42}C{x-42} {y-64} {x+42} {y-64} {x+42} {y-42}V{y+15}M{x-52} {y+15}H{x+52}"/><text class="name" x="{x}" y="{y-18}" text-anchor="middle">{esc(name[:20])}</text><text class="age" x="{x}" y="{y+34}" text-anchor="middle">died {last_push}</text><text class="age" x="{x}" y="{y+48}" text-anchor="middle">{days} days quiet</text>{plants(days,x,y+15,name)}<text class="age" x="{x+34}" y="{y-46}">{('· '+str((history or {}).get(name,{}).get('burials',1))+' lives') if (history or {}).get(name,{}).get('burials',1)>1 else ''}</text></a>')
+    out.append(keeper(845,h-28)); out.append('</svg>'); return ''.join(out)
 
 def main():
     p=argparse.ArgumentParser(description='Grow a tiny SVG graveyard from inactive GitHub repositories.')
@@ -46,6 +53,7 @@ def main():
     if not a.user: p.error('--user is required outside GitHub Actions')
     data=fetch(a.user,os.getenv('GITHUB_TOKEN'))
     update_history([r for r in data if not r.get('fork') and not r.get('archived') and r['name'].lower()!=a.user.lower()],a.minimum_days)
+    hp=Path('graveyard-history.json'); history=json.loads(hp.read_text()).get('repos',{}) if hp.exists() else {}
     out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True)
-    out.write_text(render(a.user,data,a.minimum_days,a.limit))
+    out.write_text(render(a.user,data,a.minimum_days,a.limit,history))
 if __name__=='__main__': main()
