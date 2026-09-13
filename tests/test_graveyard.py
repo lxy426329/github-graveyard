@@ -14,6 +14,7 @@ class GraveyardTests(unittest.TestCase):
         svg=graveyard.render('test',[self.repo('old-project',365)],30)
         self.assertIn('<a href="https://github.com/test/old-project">',svg)
         self.assertIn('days quiet',svg); self.assertIn('class="flower"',svg)
+        self.assertIn('†',svg); self.assertRegex(svg,r'\d{4}\.\d{2}\.\d{2}')
     def test_empty(self):
         self.assertIn('nothing to bury',graveyard.render('test',[],30))
     def test_recent_resurrection_leaves_sprout(self):

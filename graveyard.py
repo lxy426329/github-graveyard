@@ -25,6 +25,9 @@ def plants(days,x,y,name):
         p.append(f'<circle class="flower" cx="{x+side*31}" cy="{y-46}" r="2.2"/>')
     return ''.join(p)
 
+def display_name(name):
+    return name if len(name)<=18 else name[:15]+'…'
+
 def keeper(x,y):
     return f'<g class="keeper"><path d="M{x-14} {y}q3-18 14-18t14 18q-3 10-14 10T{x-14} {y}Z"/><path d="M{x-7} {y-14}q7 7 14 0M{x-4} {y-4}h1M{x+4} {y-4}h1"/></g>'
 
@@ -46,7 +49,7 @@ def render(user,data,minimum=30,limit=8,history=None):
     if not dead: out.append('<text class="name" x="450" y="100" text-anchor="middle">nothing to bury. suspicious.</text>')
     for i,(days,name,url,last_push) in enumerate(dead):
         x=120+(i%4)*210; y=130+(i//4)*165
-        out.append(f'<a href="{esc(url)}"><path class="stone" d="M{x-42} {y+15}V{y-42}C{x-42} {y-64} {x+42} {y-64} {x+42} {y-42}V{y+15}M{x-52} {y+15}H{x+52}"/><text class="name" x="{x}" y="{y-18}" text-anchor="middle">{esc(name[:20])}</text><text class="age" x="{x}" y="{y+34}" text-anchor="middle">died {last_push}</text><text class="age" x="{x}" y="{y+48}" text-anchor="middle">{days} days quiet</text>{plants(days,x,y+15,name)}<text class="age" x="{x+34}" y="{y-46}">{('· '+('Ⅱ' if history.get(name,{}).get('burials',1)==2 else 'Ⅲ' if history.get(name,{}).get('burials',1)==3 else str(history.get(name,{}).get('burials',1))) ) if history.get(name,{}).get('burials',1)>1 else ''}</text></a>')
+        out.append(f'<a href="{esc(url)}"><path class="stone" d="M{x-42} {y+15}V{y-42}C{x-42} {y-64} {x+42} {y-64} {x+42} {y-42}V{y+15}M{x-52} {y+15}H{x+52}"/><text class="name" x="{x}" y="{y-18}" text-anchor="middle">{esc(display_name(name))}</text><text class="age" x="{x}" y="{y-8}" text-anchor="middle">†</text><text class="age" x="{x}" y="{y+4}" text-anchor="middle">{last_push.replace('-', '.')}</text><text class="age" x="{x}" y="{y+48}" text-anchor="middle">{days} days quiet</text>{plants(days,x,y+15,name)}<text class="age" x="{x+34}" y="{y-46}">{('· '+('Ⅱ' if history.get(name,{}).get('burials',1)==2 else 'Ⅲ' if history.get(name,{}).get('burials',1)==3 else str(history.get(name,{}).get('burials',1))) ) if history.get(name,{}).get('burials',1)>1 else ''}</text></a>')
     if sprouts:
         sy=h-27
         for j,(name,age) in enumerate(sprouts[:4]):
