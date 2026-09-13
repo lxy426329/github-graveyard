@@ -8,9 +8,9 @@ Repositories become tombstones based on their real `pushed_at` date. Time grows 
 
 ## use it
 
-Copy `graveyard.py` and the workflow into your profile repository, then add `<img src="./graveyard.svg" width="100%" alt="My repository graveyard" />` to the README. The workflow runs daily and can also be triggered manually. No third-party dependencies are required.
+Use `lxy426329/github-graveyard@v0.6.0` from a scheduled workflow in your profile repository, then add `<img src="./graveyard.svg" width="100%" alt="My repository graveyard" />` to the README. The workflow runs daily and can also be triggered manually. No third-party dependencies are required.
 
-Run locally with `python graveyard.py --user YOUR_GITHUB_NAME --output graveyard.svg`. Options: `--minimum-days 30` controls burial age and `--limit 8` controls cemetery capacity. Forks, archived repositories, and the profile repository itself are ignored.
+Run locally with `python graveyard.py --user YOUR_GITHUB_NAME --output graveyard.svg`. Options: `--minimum-days 30` controls burial age and `--limit 8` controls cemetery capacity. Forks and the profile repository itself are ignored. Archived repositories can be shown as clean memorials.
 
 ## vegetation
 
@@ -22,3 +22,24 @@ Run locally with `python graveyard.py --user YOUR_GITHUB_NAME --output graveyard
 | 365+ days | ancient vines |
 
 MIT. Please treat the gravekeeper kindly.
+
+
+## configure the cemetery
+
+Choose what is visible with `mode`: `all` shows inactive graves and archived memorials, `inactive` hides archived projects, and `archived` shows only deliberately finished/archived projects. The last option is useful if you do not want unfinished work exposed.
+
+Choose the footprint with `rows: 1` (four graves), `rows: 2` (eight graves), and so on. `rows` overrides `limit`. Hide individual repositories with a comma-separated `exclude`, for example `exclude: secret-project,still-alive`.
+
+Archived projects are laid to rest cleanly: a small memorial flower, no weeds, and no quiet-days counter. They do not participate in resurrection history.
+
+For reliable GitHub Profile navigation, set `links-output: graveyard-links.md`; this creates ordinary clickable Markdown links for the graves currently shown.
+
+```yaml
+- uses: lxy426329/github-graveyard@v0.6.0
+  with:
+    user: YOUR_GITHUB_NAME
+    mode: all          # all | inactive | archived
+    rows: '1'
+    exclude: ''
+    links-output: graveyard-links.md
+```
