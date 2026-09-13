@@ -16,4 +16,14 @@ class GraveyardTests(unittest.TestCase):
         self.assertIn('days quiet',svg); self.assertIn('class="flower"',svg)
     def test_empty(self):
         self.assertIn('nothing to bury',graveyard.render('test',[],30))
+    def test_recent_resurrection_leaves_sprout(self):
+        today=datetime.now(timezone.utc).date().isoformat()
+        history={'ghost':{'burials':1,'resurrections':1,'buried':False,'events':[{'type':'resurrected','at':today}]}}
+        svg=graveyard.render('test',[],30,history=history)
+        self.assertIn('ghost · resurrected 0d',svg)
+        self.assertIn('class="sprout"',svg)
+    def test_second_burial_marks_grave(self):
+        history={'dead':{'burials':2,'resurrections':1,'buried':True,'events':[]}}
+        svg=graveyard.render('test',[self.repo('dead',31)],30,history=history)
+        self.assertIn('· Ⅱ',svg)
 if __name__=='__main__': unittest.main()
