@@ -1,0 +1,28 @@
+{
+  "repos": {
+    "knowledge-graph": {
+      "burials": 1,
+      "resurrections": 0,
+      "events": [
+        {
+          "type": "buried",
+          "last_push": "2026-06-22",
+          "at": "2026-09-13"
+        }
+      ],
+      "buried": true
+    },
+    "-": {
+      "burials": 1,
+      "resurrections": 0,
+      "events": [
+        {
+          "type": "buried",
+          "last_push": "2024-09-15",
+          "at": "2026-09-13"
+        }
+      ],
+      "buried": true
+    }
+  }
+}
