@@ -19,13 +19,26 @@ inputs:
   limit:
     description: Maximum number of graves
     default: '8'
+  mode:
+    description: Show all graves, only inactive repositories, or only archived memorials
+    default: all
+  rows:
+    description: Number of rows to show (4 graves per row); leave empty to use limit
+    default: ''
+  exclude:
+    description: Comma-separated repository names to hide
+    default: ''
 runs:
   using: composite
   steps:
     - shell: bash
       env:
         LINKS_OUTPUT: ${{ inputs.links-output }}
+        ROWS: ${{ inputs.rows }}
+        EXCLUDE: ${{ inputs.exclude }}
       run: |
-        args=(--user "${{ inputs.user }}" --output "${{ inputs.output }}" --history "${{ inputs.history }}" --minimum-days "${{ inputs.minimum-days }}" --limit "${{ inputs.limit }}")
+        args=(--user "${{ inputs.user }}" --output "${{ inputs.output }}" --history "${{ inputs.history }}" --minimum-days "${{ inputs.minimum-days }}" --limit "${{ inputs.limit }}" --mode "${{ inputs.mode }}")
         if [ -n "$LINKS_OUTPUT" ]; then args+=(--links-output "$LINKS_OUTPUT"); fi
+        if [ -n "$ROWS" ]; then args+=(--rows "$ROWS"); fi
+        if [ -n "$EXCLUDE" ]; then args+=(--exclude "$EXCLUDE"); fi
         python "$GITHUB_ACTION_PATH/graveyard.py" "${args[@]}"

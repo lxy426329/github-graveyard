@@ -34,13 +34,21 @@ def memorial_flower(x,y):
 def keeper(x,y):
     return f'<g class="keeper"><path d="M{x-14} {y}q3-18 14-18t14 18q-3 10-14 10T{x-14} {y}Z"/><path d="M{x-7} {y-14}q7 7 14 0M{x-4} {y-4}h1M{x+4} {y-4}h1"/></g>'
 
-def render(user,data,minimum=30,limit=8,history=None):
-    now=datetime.now(timezone.utc); dead=[]; history=history or {}
+def select_graves(user,data,minimum=30,limit=8,mode='all',rows=None,exclude=None):
+    now=datetime.now(timezone.utc); dead=[]; excluded={x.strip().lower() for x in (exclude or []) if x.strip()}
+    if mode not in {'all','inactive','archived'}: raise ValueError('mode must be all, inactive, or archived')
     for r in data:
-        if r.get('fork') or r['name'].lower()==user.lower(): continue
+        if r.get('fork') or r['name'].lower()==user.lower() or r['name'].lower() in excluded: continue
+        archived=bool(r.get('archived'))
         days=(now-datetime.fromisoformat(r['pushed_at'].replace('Z','+00:00'))).days
-        if r.get('archived') or days>=minimum: dead.append((days,r['name'],r['html_url'],r['pushed_at'][:10],bool(r.get('archived'))))
-    dead=sorted(dead,reverse=True)[:limit]
+        show=(archived and mode in {'all','archived'}) or ((not archived) and days>=minimum and mode in {'all','inactive'})
+        if show: dead.append((days,r['name'],r['html_url'],r['pushed_at'][:10],archived))
+    effective_limit=(rows*4 if rows is not None else limit)
+    return sorted(dead,reverse=True)[:effective_limit]
+
+def render(user,data,minimum=30,limit=8,history=None,mode='all',rows=None,exclude=None):
+    now=datetime.now(timezone.utc); history=history or {}
+    dead=select_graves(user,data,minimum,limit,mode,rows,exclude)
     sprouts=[]
     for name,hist in history.items():
         events=hist.get('events',[])
@@ -71,20 +79,19 @@ def main():
     p.add_argument('--limit',type=int,default=8)
     p.add_argument('--history',default='graveyard-history.json')
     p.add_argument('--links-output',default=None,help='Optional Markdown file with individually clickable grave links')
+    p.add_argument('--mode',choices=['all','inactive','archived'],default='all',help='Which repositories to show')
+    p.add_argument('--rows',type=int,default=None,help='Number of grave rows (4 graves per row); overrides limit')
+    p.add_argument('--exclude',default='',help='Comma-separated repository names to never display')
     a=p.parse_args()
     if not a.user: p.error('--user is required outside GitHub Actions')
     data=fetch(a.user,os.getenv('GITHUB_TOKEN'))
     update_history([r for r in data if not r.get('fork') and not r.get('archived') and r['name'].lower()!=a.user.lower()],a.minimum_days,a.history)
     hp=Path(a.history); history=json.loads(hp.read_text()).get('repos',{}) if hp.exists() else {}
     out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True)
-    out.write_text(render(a.user,data,a.minimum_days,a.limit,history))
+    excluded=[x.strip() for x in a.exclude.split(',') if x.strip()]
+    out.write_text(render(a.user,data,a.minimum_days,a.limit,history,a.mode,a.rows,excluded))
     if a.links_output:
-        now=datetime.now(timezone.utc); graves=[]
-        for r in data:
-            if r.get('fork') or r['name'].lower()==a.user.lower(): continue
-            days=(now-datetime.fromisoformat(r['pushed_at'].replace('Z','+00:00'))).days
-            if r.get('archived') or days>=a.minimum_days: graves.append((days,r['name'],r['html_url']))
-        graves=sorted(graves,reverse=True)[:a.limit]
+        graves=select_graves(a.user,data,a.minimum_days,a.limit,a.mode,a.rows,excluded)
         lp=Path(a.links_output); lp.parent.mkdir(parents=True,exist_ok=True)
-        lp.write_text(' · '.join(f'[{name}]({url})' for _,name,url in graves)+'\n')
+        lp.write_text(' · '.join(f'[{name}]({url})' for _,name,url,_,_ in graves)+'\n')
 if __name__=='__main__': main()

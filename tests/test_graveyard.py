@@ -24,6 +24,20 @@ class GraveyardTests(unittest.TestCase):
         self.assertIn('class="memorial"',svg)
         self.assertNotIn('class="plant"',svg)
         self.assertNotIn('days quiet',svg)
+    def test_modes(self):
+        inactive=self.repo('unfinished',40)
+        archived=self.repo('finished',2); archived['archived']=True
+        self.assertIn('>unfinished<',graveyard.render('test',[inactive,archived],mode='inactive'))
+        self.assertNotIn('>finished<',graveyard.render('test',[inactive,archived],mode='inactive'))
+        self.assertIn('>finished<',graveyard.render('test',[inactive,archived],mode='archived'))
+        self.assertNotIn('>unfinished<',graveyard.render('test',[inactive,archived],mode='archived'))
+    def test_exclude(self):
+        svg=graveyard.render('test',[self.repo('private-ish',60)],exclude=['private-ish'])
+        self.assertNotIn('>private-ish<',svg)
+    def test_rows_override_limit(self):
+        repos=[self.repo(f'dead-{i}',30+i) for i in range(10)]
+        selected=graveyard.select_graves('test',repos,rows=1)
+        self.assertEqual(4,len(selected))
     def test_recent_resurrection_leaves_sprout(self):
         today=datetime.now(timezone.utc).date().isoformat()
         history={'ghost':{'burials':1,'resurrections':1,'buried':False,'events':[{'type':'resurrected','at':today}]}}
