@@ -23,4 +23,9 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: python "$GITHUB_ACTION_PATH/graveyard.py" --user "${{ inputs.user }}" --output "${{ inputs.output }}" --history "${{ inputs.history }}" ${{ inputs.links-output && format('--links-output \"{0}\"', inputs.links-output) || '' }} --minimum-days "${{ inputs.minimum-days }}" --limit "${{ inputs.limit }}"
+      env:
+        LINKS_OUTPUT: ${{ inputs.links-output }}
+      run: |
+        args=(--user "${{ inputs.user }}" --output "${{ inputs.output }}" --history "${{ inputs.history }}" --minimum-days "${{ inputs.minimum-days }}" --limit "${{ inputs.limit }}")
+        if [ -n "$LINKS_OUTPUT" ]; then args+=(--links-output "$LINKS_OUTPUT"); fi
+        python "$GITHUB_ACTION_PATH/graveyard.py" "${args[@]}"
