@@ -64,6 +64,7 @@ def main():
     p.add_argument('--minimum-days',type=int,default=30)
     p.add_argument('--limit',type=int,default=8)
     p.add_argument('--history',default='graveyard-history.json')
+    p.add_argument('--links-output',default=None,help='Optional Markdown file with individually clickable grave links')
     a=p.parse_args()
     if not a.user: p.error('--user is required outside GitHub Actions')
     data=fetch(a.user,os.getenv('GITHUB_TOKEN'))
@@ -71,4 +72,13 @@ def main():
     hp=Path(a.history); history=json.loads(hp.read_text()).get('repos',{}) if hp.exists() else {}
     out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(render(a.user,data,a.minimum_days,a.limit,history))
+    if a.links_output:
+        now=datetime.now(timezone.utc); graves=[]
+        for r in data:
+            if r.get('fork') or r.get('archived') or r['name'].lower()==a.user.lower(): continue
+            days=(now-datetime.fromisoformat(r['pushed_at'].replace('Z','+00:00'))).days
+            if days>=a.minimum_days: graves.append((days,r['name'],r['html_url']))
+        graves=sorted(graves,reverse=True)[:a.limit]
+        lp=Path(a.links_output); lp.parent.mkdir(parents=True,exist_ok=True)
+        lp.write_text(' · '.join(f'[{name}]({url})' for _,name,url in graves)+'\n')
 if __name__=='__main__': main()

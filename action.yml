@@ -10,6 +10,9 @@ inputs:
   history:
     description: Persistent resurrection history
     default: graveyard-history.json
+  links-output:
+    description: Optional Markdown output containing reliable clickable repo links
+    default: ''
   minimum-days:
     description: Days of silence before burial
     default: '30'
@@ -20,4 +23,4 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: python "$GITHUB_ACTION_PATH/graveyard.py" --user "${{ inputs.user }}" --output "${{ inputs.output }}" --history "${{ inputs.history }}" --minimum-days "${{ inputs.minimum-days }}" --limit "${{ inputs.limit }}"
+      run: python "$GITHUB_ACTION_PATH/graveyard.py" --user "${{ inputs.user }}" --output "${{ inputs.output }}" --history "${{ inputs.history }}" ${{ inputs.links-output && format('--links-output \"{0}\"', inputs.links-output) || '' }} --minimum-days "${{ inputs.minimum-days }}" --limit "${{ inputs.limit }}"
