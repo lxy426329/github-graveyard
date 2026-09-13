@@ -1,0 +1,23 @@
+name: GitHub Graveyard
+description: Grow an SVG graveyard from repositories you have not touched in a while.
+inputs:
+  user:
+    description: GitHub username to bury repositories for
+    required: true
+  output:
+    description: SVG output path
+    default: graveyard.svg
+  history:
+    description: Persistent resurrection history
+    default: graveyard-history.json
+  minimum-days:
+    description: Days of silence before burial
+    default: '30'
+  limit:
+    description: Maximum number of graves
+    default: '8'
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: python "$GITHUB_ACTION_PATH/graveyard.py" --user "${{ inputs.user }}" --output "${{ inputs.output }}" --history "${{ inputs.history }}" --minimum-days "${{ inputs.minimum-days }}" --limit "${{ inputs.limit }}"

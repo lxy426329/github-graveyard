@@ -49,11 +49,12 @@ def main():
     p.add_argument('--output',default='graveyard.svg')
     p.add_argument('--minimum-days',type=int,default=30)
     p.add_argument('--limit',type=int,default=8)
+    p.add_argument('--history',default='graveyard-history.json')
     a=p.parse_args()
     if not a.user: p.error('--user is required outside GitHub Actions')
     data=fetch(a.user,os.getenv('GITHUB_TOKEN'))
-    update_history([r for r in data if not r.get('fork') and not r.get('archived') and r['name'].lower()!=a.user.lower()],a.minimum_days)
-    hp=Path('graveyard-history.json'); history=json.loads(hp.read_text()).get('repos',{}) if hp.exists() else {}
+    update_history([r for r in data if not r.get('fork') and not r.get('archived') and r['name'].lower()!=a.user.lower()],a.minimum_days,a.history)
+    hp=Path(a.history); history=json.loads(hp.read_text()).get('repos',{}) if hp.exists() else {}
     out=Path(a.output); out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(render(a.user,data,a.minimum_days,a.limit,history))
 if __name__=='__main__': main()
